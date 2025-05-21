@@ -17,7 +17,7 @@ default_args = {
     dag_id="migrate_gitlab_to_directus_v2",
     default_args=default_args,
     description="Migrasi data dari Gitlab ke Directus",
-    schedule="0 0 * * * *", # Setiap hari jam 00:00
+    schedule=Variable.get('schedule_migrate_gitlab_to_directus',"0 0 * * * *"), # Setiap hari jam 00:00
     start_date=datetime.now() - timedelta(days=1),
     max_active_runs=1, # Memastikan hanya satu run aktif agar tidak ada tumpang tindih
     catchup=False, # Tidak melakukan catchup 
@@ -56,16 +56,6 @@ def migrate_app():
                 """
     query_stmt = Variable.get("query_stmt", default = query_stmt)
 
-    # extract = extract_data_from_db(hook=directus_conn_hook, target_dir=extract_dir, query_stmt=query_stmt)
-    # data_splited = data_split_worker.override(task_id = 'data_split_worker')(extract_id="extract_data_from_db",target_dir= transform_dir, num_workers=num_workers)
-    # extracted_workers = []
-    # for i in range(num_workers):
-    #     extracted_worker = extract_data_from_api.override(task_id = f'extract_data_from_api_{i}')(target_dir=extract_dir, chunk = i)
-    #     extracted_workers.append(extracted_worker)
-
-    # upserted = upsert_with_mogrify.override(task_id = 'upsert_with_mogrify')(hook=directus_conn_hook, num_workers=num_workers, target_table=target_table)
-    # deleted = delete_files.override(task_id = 'delete_from_table')()
-
 
     extract = extract_data_from_db(hook=directus_conn_hook, target_dir=extract_dir, query_stmt=query_stmt)
     data_splited = data_split_worker.override(task_id = 'data_split_worker')(extract_path=extract,target_dir= transform_dir, num_workers=num_workers)
@@ -73,7 +63,5 @@ def migrate_app():
     upserted = upsert_with_mogrify(hook=directus_conn_hook, files_path = extracted_workers, target_table=target_table)
     upserted >> delete_files()
 
-    # for i in range(num_workers):
-    #     chain(extract,data_splited, extracted_workers[i], upserted,deleted)
 
 migrate_app_dag = migrate_app()
