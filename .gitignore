@@ -1,0 +1,8 @@
+__pycache__
+.env
+*.pyc
+config/
+logs/
+*.log
+*.parquet
+cloud_sql_proxy_*
